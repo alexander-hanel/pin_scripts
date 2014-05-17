@@ -62,8 +62,8 @@ VOID whiteListImage(IMG Img, VOID *v)
 
 	// Add Module Details to the log
 	outFile << "[IMG] Module Name: " << IMG_Name(Img).c_str() << endl;  
-     outFile << "[IMG] Module Base: " << hex << IMG_LowAddress(Img) << endl;  
-     outFile << "[IMG] Module End: "  << hex << IMG_HighAddress(Img) << endl;  
+    outFile << "[IMG] Module Base: " << hex << IMG_LowAddress(Img) << endl;  
+    outFile << "[IMG] Module End: "  << hex << IMG_HighAddress(Img) << endl;  
 }
 
 /* ===================================================================== */
@@ -102,7 +102,8 @@ string getDism(ADDRINT pc)
 
     xed_error_enum_t xed_code = xed_decode(&xedd, reinterpret_cast<UINT8*>(pc), max_inst_len);
     BOOL xed_ok = (xed_code == XED_ERROR_NONE);
-    if (xed_ok) {
+    if (xed_ok) 
+    {
         char buf[2048];
         xed_uint64_t runtime_address = static_cast<xed_uint64_t>(pc); 
 

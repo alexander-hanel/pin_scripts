@@ -1,7 +1,7 @@
 /*
 Author:	  Alexander Hanel
 Date:	  5/17/2014
-Purpose:  This is a pintool that logs all calls & branches to a file. 
+Purpose:    This is a pintool that logs all calls & branches to a file. 
 Credit:	  A large portion of the code was inspired/copied from Robert Muth's 
 		  pin/source/tools/SimpleExample/edgcnt.cpp. Thank you Intel for 
 		  providing so many great examples. See bottom for example output.
@@ -62,8 +62,8 @@ VOID whiteListImage(IMG Img, VOID *v)
 
 	// Add Module Details to the log
 	outFile << "[IMG] Module Name: " << IMG_Name(Img).c_str() << endl;  
-    outFile << "[IMG] Module Base: " << hex << IMG_LowAddress(Img) << endl;  
-    outFile << "[IMG] Module End: "  << hex << IMG_HighAddress(Img) << endl;  
+	outFile << "[IMG] Module Base: " << hex << IMG_LowAddress(Img) << endl;  
+	outFile << "[IMG] Module End: "  << hex << IMG_HighAddress(Img) << endl;  
 }
 
 /* ===================================================================== */
@@ -80,7 +80,7 @@ bool isAddressInModule(ADDRINT addr)
 	if (it != modules.end())
 		return TRUE;
 	else
-	    return FALSE;
+		return FALSE;
 }
 
 /* ===================================================================== */
@@ -96,21 +96,21 @@ string getDism(ADDRINT pc)
     static const xed_state_t dstate = { XED_MACHINE_MODE_LEGACY_32, XED_ADDRESS_WIDTH_32b};
 #endif
 
-    xed_decoded_inst_t xedd;
-    xed_decoded_inst_zero_set_mode(&xedd,&dstate);
-    const unsigned int max_inst_len = 15;
+	xed_decoded_inst_t xedd;
+	xed_decoded_inst_zero_set_mode(&xedd,&dstate);
+	const unsigned int max_inst_len = 15;
 
-    xed_error_enum_t xed_code = xed_decode(&xedd, reinterpret_cast<UINT8*>(pc), max_inst_len);
-    BOOL xed_ok = (xed_code == XED_ERROR_NONE);
-    if (xed_ok) 
-    {
-        char buf[2048];
-        xed_uint64_t runtime_address = static_cast<xed_uint64_t>(pc); 
+	xed_error_enum_t xed_code = xed_decode(&xedd, reinterpret_cast<UINT8*>(pc), max_inst_len);
+	BOOL xed_ok = (xed_code == XED_ERROR_NONE);
+	if (xed_ok) 
+	{
+		char buf[2048];
+		xed_uint64_t runtime_address = static_cast<xed_uint64_t>(pc); 
 
-        xed_decoded_inst_dump_intel_format(&xedd, buf, 2048, runtime_address);
-        return buf;
-    }
-    return "";
+		xed_decoded_inst_dump_intel_format(&xedd, buf, 2048, runtime_address);
+		return buf;
+	}
+	return "";
 }
 
 /* ===================================================================== */
@@ -134,31 +134,31 @@ void logSourceDest( ADDRINT source, ADDRINT dest, bool taken )
 
 VOID Instruction( INS ins, void *v )
 {
-    //check for invalid INS
-    if( !INS_Valid(ins) ) 
-    {
-	   outFile << "error " << hex << INS_Address(ins);
-	   return;
-    }
-    if (isAddressInModule(INS_Address(ins)))
+	//check for invalid INS
+	if( !INS_Valid(ins) ) 
+	{
+		outFile << "error " << hex << INS_Address(ins);
 		return;
-    if( INS_IsDirectBranchOrCall(ins) )
-    {
-	    INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR) logSourceDest,  IARG_INST_PTR, IARG_BRANCH_TARGET_ADDR , IARG_BRANCH_TAKEN, IARG_END);
-	    return;
-    }
-    else if( INS_IsIndirectBranchOrCall(ins) )
-    {
-	    INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR) logSourceDest,  IARG_INST_PTR, IARG_BRANCH_TARGET_ADDR , IARG_BRANCH_TAKEN, IARG_END);
-	    return; 
-    }
-    else if( INS_IsSyscall(ins) )
-    {
-	    INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR) logSourceDest,  IARG_INST_PTR, IARG_BRANCH_TARGET_ADDR , IARG_BRANCH_TAKEN, IARG_END);
-	    return; 
-    }
-    // Not a branch Instruction 
-    return;
+	}
+	if (isAddressInModule(INS_Address(ins)))
+		return;
+	if( INS_IsDirectBranchOrCall(ins) )
+	{
+		INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR) logSourceDest,  IARG_INST_PTR, IARG_BRANCH_TARGET_ADDR , IARG_BRANCH_TAKEN, IARG_END);
+		return;
+	}
+	else if( INS_IsIndirectBranchOrCall(ins) )
+	{
+		INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR) logSourceDest,  IARG_INST_PTR, IARG_BRANCH_TARGET_ADDR , IARG_BRANCH_TAKEN, IARG_END);
+		return; 
+	}
+	else if( INS_IsSyscall(ins) )
+	{
+		INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR) logSourceDest,  IARG_INST_PTR, IARG_BRANCH_TARGET_ADDR , IARG_BRANCH_TAKEN, IARG_END);
+		return; 
+	}
+	// Not a branch Instruction 
+	return;
 }
 
 

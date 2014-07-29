@@ -1,8 +1,8 @@
 # Pin Tools#
 
-### Summary ###
+Hello. I have been working on this project for a month or two. I have two Coursea classes coming up so to drop it. I decided to use this README to document where I left off and possibly help others with my notes. Cheers. 
 
-Hello. I had to drop this project because I have two Coursea classes coming up. The README includes the needed data I might need to pick up where I left off.
+### Summary ###
 
 This is a collection of Pin tools that I wrote in C++.  The goal of this project was to learn C++ and Pin. My original idea was to create a Pin tool to profile packers. In it's most simplistic form a packer can be looked upon as some math (lossless decompression, decryption or obfuscation) and then a jump to the original entry point or the unpacked code. A pattern in packers is to write the unpacked code to another section or to an allocated block of memory. If only branch and call instructions with a source and destination to different memory pages are logged, then this can help with understanding the unpacking process. On most systems a memory page is 4096 bytes (section alignment is also usually the same size). Using Pin something similar to a call gate can be created to monitor all calls and branches to different memory pages. Below is the code to log all calls and branches. 
 ```

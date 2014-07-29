@@ -506,11 +506,10 @@ This code can be found in ebfe.cpp
 
 
 Useful Links 
+
 * https://software.intel.com/sites/landingpage/pintool/docs/65163/Pin/html/
 * https://code.google.com/p/kerckhoffs/source/browse/#svn%2Ftrunk%2Ftrace_tool
 * http://joxeankoret.com/blog/2012/11/04/a-simple-pin-tool-unpacker-for-the-linux-version-of-skype/
 * http://shell-storm.org/repo/Notepad/
 * https://github.com/jbremer/godware
 * http://eindbazen.net/2013/04/pctf-2013-hypercomputer-1-bin-100/
-
-

@@ -1,10 +1,10 @@
 # Pin Tools#
 
+Hello. I have been working on this project for a month or two. I have two Coursea classes coming up so to drop it. I decided to use this README to document where I left off and possibly help others with my notes. Cheers. 
+
 ### Summary ###
 
-Hello. I had to drop this project because I have two Coursea classes coming up. The README includes the needed data I might need to pick up where I left off.
-
-This is a collection of Pin tools that I wrote in C++.  The goal of this project was to learn C++ and Pin. My original idea was to create a Pin tool to profile packers. In it's most simplistic form a packer can be looked upon as some math (lossless decompression, decryption or obfuscation) and then a jump to the original entry point or the unpacked code. A pattern in packers is to write the unpacked code to another section or to an allocated block of memory. If only branch and call instructions with a source and destination to different memory pages are logged, then this can help with understanding the unpacking process. On most systems a memory page is 4096 bytes (section alignment is also usually the same size). Using Pin something similar to a call gate can be created to monitor all calls and branches to different memory pages. Below is the code to log all calls and branches. 
+This is a collection of Pin tools that I wrote in C++.  The goal of this project was to learn C++ and Pin. My original idea was to create a Pin tool to profile packers. In it's most simplistic form a packer can be looked upon as some math (lossless decompression, decryption or obfuscation) and then a jump to the original entry point or the unpacked code. A pattern of packers is to write the unpacked code to another section or to an allocated block of memory. If only branch and call instructions with a source and destination with a different memory pages are logged, then this can help with guessing the original entry point. On most systems a memory page is 4096 bytes (section alignment is also usually the same size). Using Pin to create something similar to a call gate it can be used to monitor all calls and branches to different memory pages. Below is the code to log all calls and branches. 
 ```
 #!c++
 
@@ -231,7 +231,7 @@ Zprotect                    1.4.4.0 	988,165
 The incomplete means the log did not contain "[END]". False positives could be present due non-packed code being logged. If you would like to do the at home version please see the repo for tuts4me.cpp. 
 
 ### Loaded Modules (IMG) ###
-Being alerted on when modules load in Pin is super simple. In main add the following function IMG_AddInstrumentFunction(whiteListImage, 0);. The first argument will be a function that is called everytime a module is loaded. 
+Being alerted on when modules load in Pin is super simple. In main add the following function IMG_AddInstrumentFunction(whiteListImage, 0);. The first argument will be a function that is called every time a module is loaded. 
 
 ```
 #!c++
@@ -283,7 +283,7 @@ I would not recommend using a static address to check for loaded modules, such a
 1. Pass execution to debugger
 1. Continue debugging in Ollydbg or Windbg
 
-One through three is easily doable. Pin provides a tremendous amount of useful for source code examples. It was easy to hack together examples. The third part can be taken care of by using a global variable that counts all the logged branches or calls. 
+One through three is easily doable. Pin provides a tremendous amount of useful source code examples. It was easy to hack together examples. The third part can be taken care of by using a global variable that counts all the logged branches or calls. 
 
 ```
 #!c++
@@ -305,7 +305,7 @@ One through three is easily doable. Pin provides a tremendous amount of useful f
 	}
 ```
 
-The ATTEMPT_EXIT is where things got interesting. I tried two approaches. The first approach was to change EIP via PIN_SetContextReg(ctxt,  REG_EIP, ADDRINT(1001)); to an address that I knew would cause an exception. After that was changed I would call PIN_ExecuteAt(ctxt) and then detach. Pin would be detached, the exception would be handled by the operating system, olldbg would be the just in time debugger and it would catch the exception. The debugger would be invoked but all the windows (register, CPU, stack, etc) would be blank. After switching to Windbg as the just in time debugger everything seemed to be working well until I realized some packers actually use exception handling.  
+The ATTEMPT_EXIT is where things got interesting. I tried two approaches. The first approach was to change EIP to an address that I knew would cause an exception via PIN_SetContextReg(ctxt,  REG_EIP, ADDRINT(1001)). After that was changed I would call PIN_ExecuteAt(ctxt) and then detach. Pin would be detached, the exception would be handled by the operating system, olydbg would be the just in time debugger and it would catch the exception. The debugger would be invoked but all the windows (register, CPU, stack, etc) would be blank. After switching to Windbg as the just in time debugger everything seemed to be working well until I realized some packers actually use exception handling. Below we can see a packer that handles the exception I created.   
 
 ```
 #!text
@@ -503,7 +503,6 @@ Why does AddDetachFunction() get called once I attach with a debugger? Does anyo
 ```
 
 This code can be found in ebfe.cpp
-
 
 Useful Links 
 

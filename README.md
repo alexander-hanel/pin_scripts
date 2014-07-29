@@ -507,9 +507,15 @@ This code can be found in ebfe.cpp
 ### VMware Detection Bypass Via in eax, dx  
 This technique can be bypassed in Pin just by logging the instruction. 
 
+
+```
+#!c++
+
 // Bypass VMware Detection 
 if (INS_Mnemonic(ins) == "IN")
 	INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR)printip, IARG_INST_PTR, IARG_END);
+```
+
 
 Only print the IP or something that does not involve passing the context. There looks to be a bug in Pin that does not handle the in instruction correctly if just logged. 
 

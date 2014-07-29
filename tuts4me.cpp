@@ -26,8 +26,7 @@ ADDRINT logAddr = 0;    //
 ADDRINT addr;
 vector<string> modules;
 ofstream outFile;
-
-KNOB<string> KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool", "o", "bc.txt", "specify output file name");
+bool isAddressInModule(ADDRINT);
 
 /* ===================================================================== */
 /* Print Help Message                                                    */
@@ -35,9 +34,9 @@ KNOB<string> KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool", "o", "bc.txt", "spec
 
 INT32 Usage()
 {
-	cerr << "This tool prints the source & destinaton of control flow" << endl;
-	cerr << endl << KNOB_BASE::StringKnobSummary() << endl;
-	return -1;
+    cerr << "This tool prints the source & destinaton of control flow" << endl;
+    cerr << endl << KNOB_BASE::StringKnobSummary() << endl;
+    return -1;
 }
 
 /* ===================================================================== */
@@ -46,8 +45,24 @@ INT32 Usage()
 
 VOID AppStart(VOID *v) 
 { 
-	outFile << "[APP] Application Started" << endl;
+    outFile << "[APP] Application Started" << endl;
+    started = TRUE;
 } 
+
+
+/* ===================================================================== */
+/* Kill/Exit Process and Analysis	                                      */
+/* ===================================================================== */
+VOID EndAnalysis(ADDRINT addr)
+{
+	PIN_LockClient();
+	if (isAddressInModule(addr) == FALSE)
+	{
+		outFile << "[END] " << hex << addr << endl;
+		PIN_ExitApplication(0);	
+	}
+	PIN_UnlockClient();
+}
 
 /* ===================================================================== */
 /* White list addresses in loaded modules                                */
@@ -56,14 +71,54 @@ VOID AppStart(VOID *v)
 VOID whiteListImage(IMG Img, VOID *v)
 { 
 	if (IMG_IsMainExecutable(Img))
+	{
 		outFile << "[IMG] Main Module" << endl; 
+		outFile << "[IMG] Module Name: " << IMG_Name(Img).c_str() << endl;  
+		outFile << "[IMG] Module Base: " << hex << IMG_LowAddress(Img) << endl;
+		outFile << "[IMG] Module End: "  << hex << IMG_HighAddress(Img) << endl;
+	}
 	else
 		modules.push_back(IMG_Name(Img).c_str());
 
 	// Add Module Details to the log
-	outFile << "[IMG] Module Name: " << IMG_Name(Img).c_str() << endl;  
-	outFile << "[IMG] Module Base: " << hex << IMG_LowAddress(Img) << endl;  
-	outFile << "[IMG] Module End: "  << hex << IMG_HighAddress(Img) << endl;  
+	//outFile << "[IMG] Module Name: " << IMG_Name(Img).c_str() << endl;  
+	//outFile << "[IMG] Module Base: " << hex << IMG_LowAddress(Img) << endl;  
+	//outFile << "[IMG] Module End: "  << hex << IMG_HighAddress(Img) << endl;  
+
+	// BP on GetStartupInfoA
+	RTN rtn = RTN_FindByName(Img, "GetStartupInfoA");	
+	if ( RTN_Valid( rtn ))
+     {
+        RTN_Open(rtn);
+        RTN_InsertCall(rtn, IPOINT_BEFORE, AFUNPTR(EndAnalysis), IARG_RETURN_IP, IARG_END);
+        RTN_Close(rtn);
+     }
+
+	RTN rtn1 = RTN_FindByName(Img, "MessageBoxA");	
+	if ( RTN_Valid( rtn1 ))
+     {
+        RTN_Open(rtn1);
+        RTN_InsertCall(rtn1, IPOINT_BEFORE, AFUNPTR(EndAnalysis), IARG_RETURN_IP, IARG_END);
+        RTN_Close(rtn1);
+     }
+
+	RTN rtn2 = RTN_FindByName(Img, "MessageBoxW");	
+	if ( RTN_Valid( rtn2 ))
+     {
+        RTN_Open(rtn2);
+        RTN_InsertCall(rtn2, IPOINT_BEFORE, AFUNPTR(EndAnalysis), IARG_RETURN_IP, IARG_END);
+        RTN_Close(rtn2);
+     }
+	
+
+	RTN rtn3 = RTN_FindByName(Img, "CreateProcessA");	
+	if ( RTN_Valid( rtn3 ))
+     {
+        RTN_Open(rtn3);
+        RTN_InsertCall(rtn3, IPOINT_BEFORE, AFUNPTR(EndAnalysis), IARG_RETURN_IP, IARG_END);
+        RTN_Close(rtn3);
+     }
+
 }
 
 /* ===================================================================== */
@@ -74,13 +129,21 @@ VOID whiteListImage(IMG Img, VOID *v)
 
 bool isAddressInModule(ADDRINT addr)
 {
+	PIN_LockClient();
 	IMG img = IMG_FindByAddress(addr);
 	string path = (IMG_Valid(img) ? IMG_Name(img) : "InvalidImg");
 	auto it = std::find(modules.begin(), modules.end(), path);
 	if (it != modules.end())
+	{	
+		PIN_UnlockClient();
 		return TRUE;
+	}
 	else
+	{
+		PIN_UnlockClient();
 		return FALSE;
+	}
+	
 }
 
 /* ===================================================================== */
@@ -121,7 +184,10 @@ void logSourceDest( ADDRINT source, ADDRINT dest, bool taken )
 {
 	if (!taken)
 		return;
-	outFile << "[INS] Src: " << hex << source << " Dism: " << getDism(source) << " Dest: " << hex << dest << endl;
+	if (isAddressInModule(dest))
+		return;
+	if ( ( source & 0xffff0000 ) != ( dest & 0xffff0000 ) )
+		outFile << "[INS] Src: " << "0x" << hex << source << " ;" << " Dism: " << getDism(source) << ';' << " Dest: " << "0x" << hex << dest << endl;
 }
 
 /* ===================================================================== */
@@ -170,59 +236,20 @@ VOID Instruction( INS ins, void *v )
 
 int main(int argc, char * argv[])
 {
-	// Initialize pin
-	if (PIN_Init(argc, argv)) 
-		return Usage();
-	// Creae Log file 
-	outFile.open(KnobOutputFile.Value().c_str());
-	// Register a notification function that is called after pin initialization is finished.
-	PIN_AddApplicationStartFunction(AppStart,0);
-	// Register ImageLoad to be called when an image is loaded
-	IMG_AddInstrumentFunction(whiteListImage, 0);
-	//  Add a function used to instrument at instruction granularity 
-	INS_AddInstrumentFunction(Instruction, 0);
-	PIN_StartProgram();
-	return 0;
+    // Initialize pin
+    if (PIN_Init(argc, argv)) 
+	   return Usage();
+    PIN_InitSymbols();
+    // Create Log file
+    string output = string(argv[8]) + ".log" ;
+    KNOB<string> KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool", "o", output, "specify output file name");
+    outFile.open(KnobOutputFile.Value().c_str());
+    // Register a notification function that is called after pin initialization is finished.
+    PIN_AddApplicationStartFunction(AppStart,0);
+    // Register ImageLoad to be called when an image is loaded
+    IMG_AddInstrumentFunction(whiteListImage, 0);
+    //  Add a function used to instrument at instruction granularity 
+    INS_AddInstrumentFunction(Instruction, 0);
+    PIN_StartProgram();
+    return 0;
 }
-
-/*
-Example Output
-------------------------------------------------------
-[IMG] Main Module
-[IMG] Module Name: c:\pin\upx.exe
-[IMG] Module Base: 400000
-[IMG] Module End: 589fff
-[IMG] Module Name: C:\Windows\syswow64\KERNELBASE.dll
-[IMG] Module Base: 75f20000
-[IMG] Module End: 75f66fff
-[IMG] Module Name: C:\Windows\syswow64\kernel32.dll
-[IMG] Module Base: 765f0000
-[IMG] Module End: 766fffff
-[IMG] Module Name: C:\Windows\SysWOW64\ntdll.dll
-[IMG] Module Base: 77de0000
-[IMG] Module End: 77f5ffff
-[APP] Application Started
-[IMG] Module Name: C:\Windows\syswow64\msvcrt.dll
-[IMG] Module Base: 75d80000
-[IMG] Module End: 75e2bfff
-[INS] Src: 58774b Dism: jnz 0x587748 Dest: 587748
-[INS] Src: 58774b Dism: jnz 0x587748 Dest: 587748
-[INS] Src: 58774b Dism: jnz 0x587748 Dest: 587748
-[INS] Src: 58774b Dism: jnz 0x587748 Dest: 587748
-[INS] Src: 58774b Dism: jnz 0x587748 Dest: 587748
-[INS] Src: 58774b Dism: jnz 0x587748 Dest: 587748
-[INS] Src: 58774b Dism: jnz 0x587748 Dest: 587748
-[INS] Src: 58774b Dism: jnz 0x587748 Dest: 587748
-[INS] Src: 58774b Dism: jnz 0x587748 Dest: 587748
-[INS] Src: 58774b Dism: jnz 0x587748 Dest: 587748
-[INS] Src: 58774b Dism: jnz 0x587748 Dest: 587748
-[INS] Src: 58774b Dism: jnz 0x587748 Dest: 587748
-[INS] Src: 58774b Dism: jnz 0x587748 Dest: 587748
-[INS] Src: 58774b Dism: jnz 0x587748 Dest: 587748
-[INS] Src: 58774b Dism: jnz 0x587748 Dest: 587748
-[INS] Src: 58774b Dism: jnz 0x587748 Dest: 587748
-[INS] Src: 58774b Dism: jnz 0x587748 Dest: 587748
-[INS] Src: 58774b Dism: jnz 0x587748 Dest: 587748
-[INS] Src: 58774b Dism: jnz 0x587748 Dest: 587748
-....
-*/

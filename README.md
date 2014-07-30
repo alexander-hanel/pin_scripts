@@ -1,6 +1,6 @@
 # Pin Tools#
 
-Hello. I have been working on this project for a month or two. I have two Coursea classes coming up so I had to put it on the back burder. I decided to use this README to document where I left off and possibly help others with my notes. Cheers. 
+Hello. I have been working on this project for a month or two. I have two Coursea classes coming up so I had to put it on the back burner. I decided to use this README to document where I left off and possibly help others with my notes. Cheers. 
 
 ### Summary ###
 
